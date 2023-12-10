@@ -3,6 +3,26 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Instrument, Order
 from .serializers import InstrumentSerializer, OrderSerializer
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, login
+from rest_framework import generics
+from .serializers import UserSerializer
+
+class LoginView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+class RegistrationView(generics.CreateAPIView):
+    serializer_class = UserSerializer
 
 class InstrumentList(APIView):
     def get(self, request):
@@ -67,3 +87,4 @@ class OrderDetail(APIView):
         order = Order.objects.get(pk=pk)
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
